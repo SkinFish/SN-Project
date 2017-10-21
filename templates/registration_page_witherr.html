@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Registration</title>
+</head>
+<body>
+	<form action="/register" method="POST">
+		<div class="login_form">
+			Login: <input name="login"></input> <br>
+			Email:<input type="email" name="email"></input> <br>
+			Password:<input type="password" name="password"></input> <br>
+			<span style="color: darkred">Error: All inputs mustn't be empty, password can't be shorter than 6 chars, <br>
+			login can't be shorter than 6 chars and email can't be shorter than 4 chars</span><br>
+			<input type="submit" value="Register">
+		</div>
+	</form>
+</body>
+</html>
