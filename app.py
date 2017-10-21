@@ -1,8 +1,25 @@
 from flask import Flask, render_template, request, redirect, url_for, g
 import sqlite3
+import re
+
+
+# Сделал задание на checkio.org, решил применить тут
+def check(data):
+    data = str(data)
+    if len(data) < 6:
+        return False
+    elif re.search(r"[a-z]", data) is None:
+        return False
+    # elif re.search(r"[A-Z]", data) is None:
+    #     return False
+    # elif re.search(r"[0-9]", data) is None:
+    #     return False
+    else:
+        return True
 
 
 app = Flask(__name__)
+
 
 def get_value(text):
     db = sqlite3.connect("db/users.db")
@@ -11,17 +28,21 @@ def get_value(text):
     result = csr.fetchall()
     return result
 
+
 @app.route("/", methods=["GET", "POST"])
 def home():
     if request.method == "POST":
         form_name = request.form["name"]
         form_passw = request.form["passw"]
+        if form_name == "" or len(form_name) < 6 or len(form_passw) < 6 or form_passw == "":
+            return render_template("login_witherr.html")
         # Начало нормальной авторизации
+        # Столкнулся с проблемой безопасности, так-что оставил так пока-что
         db = sqlite3.connect("db/users.db")
         csr = db.cursor()
         # print(get_value("select * from users where login='" + form_name + "' and password='" + form_passw + "'"))
-        if get_value("select * from users where login='"+form_name+"' and password='"+form_passw+"'") != []:
-            print("[Log] User "+form_name+" logged in successfully")
+        if get_value("select * from users where login='" + form_name + "' and password='" + form_passw + "'") != []:
+            print("[Log] User " + form_name + " logged in successfully")
         db.commit()
         db.close()
         print("[Log] Logged in user: " + form_name + ", password: " + form_passw)
@@ -29,11 +50,14 @@ def home():
 
     return render_template("login.html")
 
-@app.route("/page", methods=["POST","GET"])
+
+@app.route("/page", methods=["POST", "GET"])
 def user_page():
     if request.args != []:
         login = request.args["login"]
         email = request.args["email"]
+
+
 @app.route("/hello", methods=["POST", "GET"])
 def hello():
     name = request.args["name"]
@@ -42,7 +66,8 @@ def hello():
 
     return render_template("hello.html", context=context)
 
-@app.route("/register", methods=["POST","GET"])
+
+@app.route("/register", methods=["POST", "GET"])
 def registration():
     print("[Log] Someone opened /register")
     if request.method == "POST":
@@ -51,14 +76,22 @@ def registration():
         login = request.form.get("login")
         email = request.form.get("email")
         password = request.form.get("password")
-        csr.execute("INSERT INTO users (id, login, password, email) VALUES (NULL, '"+login+"','"+password+"','"+email+"')")
+        # Проверка сложности пароля
+        if check(password) == False:
+            return render_template("registration_page.html")
+        # Проверка длинны, наличия логина и почты
+        if len(login) < 6 or login == "" or len(email) < 4 or email == "":
+            return render_template("registration_page.html")
+        csr.execute(
+            "INSERT INTO users (id, login, password, email) VALUES (NULL, '" + login + "','" + password + "','" + email + "')")
         print(csr.execute("select * from users where id=1"))
         db.commit()
         db.close()
-        print("[Log] Registered login: " + login + ", email: "+ email + " with password: " + password)
+        print("[Log] Registered login: " + login + ", email: " + email + " with password: " + password)
         return render_template("done.html")
 
     return render_template("registration_page.html")
+
 
 if __name__ == '__main__':
     app.run(debug=True)
