@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{context.name}}</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+	<style>
+		body {
+			background-color: #303030;
+		}
+		.nav-style {
+			background-color: rgba(0,0,0,0.5);
+			border-radius: 0px;
+			border-color: rgb(0,0,0);
+		}
+		.nav-button:hover {
+			transition: 0.2s;
+			background-color: rgba(0,0,0,0.8);
+		}
+		.nav-content {
+			color: #f21334!important;
+			font-family: "Arial Black", Gadget, sans-serif;
+		}
+		.nav-brand {
+			color: rgb(219, 45, 15)!important;
+			font-family: "Arial Black", Gadget, sans-serif;
+		}
+		.nav-brand:hover {
+			transition: 0.2s!important;
+			color: rgba(214, 214, 214, 0.3)!important;
+			background-color: rgba(0,0,0,0.8)!important;
+		}
+
+		.working-place {
+			background-color: #232323;
+			width: 90%;
+			margin-left: 5%;
+			margin-top: 5%;
+			border: 1px solid black;
+			padding: 15px;
+			position: relative;
+		}
+		img.avatar-style {
+			border:1px solid black;
+		}
+		.user-place {
+			display: inline-block;
+		}
+		.name-style {
+			width: 252px;
+			color: #cecece;
+			background-color: #303030;
+			font-size: 20px;
+			border: 1px solid black;
+			margin-top: 1px;
+		}
+		.status-place {
+			border: 1px solid black;
+			background-color: #303030;
+			color: #cecece;
+			display: inline-block;
+			width: 940px;
+			position: absolute;
+			top:15px;
+			margin-left: 5px;
+		}
+	</style>
+	<nav class="navbar navbar-default navbar-fixed-top nav-style">
+		<div class="container-fluid">
+	    	<div class="navbar-header">
+	    		<a class="nav-brand navbar-brand nav-brand" href="#">Name</a>
+	    	</div>
+	    	<ul class="nav navbar-nav">
+	    		<li class="nav-button"><a class="nav-content" href="/home">Home</a></li>
+	    		<li class="nav-button"><a class="nav-content" href="/">Groups</a></li>
+	    		<li class="nav-button"><a class="nav-content" href="/">Friends</a></li>
+	    		<li class="nav-button"><a class="nav-content" href="/edit">Edit</a></li>
+	    	</ul>
+		</div>
+	</nav>
+
+	<div class="working-place">
+		<div class="user-place">
+			<img src="{{ url_for('resources', filename=' {{context.avatar}}') }}" class="avatar-style">
+			<div class="name-style">{{context.name}}</div>
+		</div>
+		<div class="status-place">
+			Status: {{context.status}}
+		</div>
+	</div>
+</body>
+</html>

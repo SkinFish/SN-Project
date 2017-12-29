@@ -1,9 +1,16 @@
-from flask import Flask, render_template, request, redirect, url_for, g
+from flask import Flask, render_template, request, redirect, url_for, g, session, current_app
 import sqlite3
 import re
+import secrets
 
+def redirect_url():
+    return request.args.get('next') or \
+           request.referrer
 
-# Сделал задание на checkio.org, решил применить тут
+def sessionCheck():
+    if session.get("login") == None:
+        return redirect("/")
+
 def check(data):
     data = str(data)
     if len(data) < 6:
@@ -19,30 +26,40 @@ def check(data):
 
 
 app = Flask(__name__)
+app.secret_key = secrets.token_bytes(32)
 
+def get_value(conn, sql):
+    db = sqlite3.connect(conn)
+    cursor = db.cursor()
+    cursor.execute(sql)
 
-def get_value(text):
+    return cursor.fetchone()[0]
+
+def getSessionID():
+    sessionCheck()
     db = sqlite3.connect("db/users.db")
     csr = db.cursor()
-    csr.execute(text)
-    result = csr.fetchall()
+    sql = "SELECT id FROM users WHERE login = '"+ str(session.get("login")) +"'"
+    result = get_value("db/users.db",sql)
     return result
 
 
 @app.route("/", methods=["GET", "POST"])
 def home():
+    sessionCheck()
     if request.method == "POST":
         form_name = request.form["name"]
         form_passw = request.form["passw"]
         if form_name == "" or len(form_name) < 6 or len(form_passw) < 6 or form_passw == "":
             return render_template("login_witherr.html")
-        # Начало нормальной авторизации
-        # Столкнулся с проблемой безопасности, так-что оставил так пока-что
         db = sqlite3.connect("db/users.db")
         csr = db.cursor()
         # print(get_value("select * from users where login='" + form_name + "' and password='" + form_passw + "'"))
-        if get_value("select * from users where login='" + form_name + "' and password='" + form_passw + "'") != []:
+        if get_value("db/users.db","select * from users where login='" + form_name + "' and password='" + form_passw + "'") != []:
+            session["login"] = str(form_name)
             print("[Log] User " + form_name + " logged in successfully")
+        else:
+            return redirect(url_for("/"))
         db.commit()
         db.close()
         print("[Log] Logged in user: " + form_name + ", password: " + form_passw)
@@ -58,13 +75,72 @@ def user_page():
         email = request.args["email"]
 
 
-@app.route("/hello", methods=["POST", "GET"])
+@app.route("/home", methods=["POST", "GET"])
 def hello():
-    name = request.args["name"]
-    passw = request.args["passw"]
-    context = {'name': name, 'passw': passw}
+    sessionCheck()
+    name = session.get("login");
+    status = get_value("db/users.db", "SELECT status_text FROM users WHERE login = '"+ session.get("login") +"'")
+    avatar = get_value("db/users.db", "SELECT avatar FROM users WHERE login = '" + session.get("login") + "'")
 
-    return render_template("hello.html", context=context)
+    context = {'name': name, 'status': status, 'avatar': avatar}
+
+    return render_template("home.html", context=context)
+
+@app.route("/logout")
+def logout():
+    user = session.get("login", None)
+    if user:
+        del session["login"]
+    return redirect("/")
+
+@app.route("/add_friend", methods=["GET"])
+def add_friend():
+    if request.method == "GET":
+        friend_id = request.args["id"]
+        db = sqlite3.connect("db/users.db")
+        csr = db.cursor()
+        own_id = get_value("db/users.db","SELECT id FROM users WHERE login = '" + session.get("login") + "'")
+
+        # params = (1 ,int(own_id), int(str(friend_id)),0)
+        sql = "INSERT INTO friends (id,user_id,user2_id,block) VALUES (NULL, "+own_id+", "+friend_id+", 0)"
+        print(sql)
+        csr.execute(sql)
+        db.commit()
+        print("OWN: "+str(own_id))
+        print("FRIEND: "+str(friend_id))
+        print("[LOG] ADDED "+str(own_id) + " AND "+str(friend_id)+" TO FRIENDS")
+        return redirect("done.html")
+
+@app.route("/group_create", methods=["GET"])
+def group_create():
+    sessionCheck()
+
+    group_name = request.args["name"]
+    users_db = sqlite3.connect("db/users.db")
+    groups_db = sqlite3.connect("db/groups.db")
+    u_csr = users_db.cursor()
+    g_csr = groups_db.cursor()
+    owner_id = session.get("login")
+    sql = "insert into groups (id, name, owner_id) values (null, '"+ group_name +"', "+ getSessionID() +")"
+    return render_template("done.html")
+
+@app.route("/remove_friend", methods=["GET"])
+def remove_friend():
+    if request.method == "GET":
+        unfriend_id = request.args["id"]
+        db = sqlite3.connect("db/users.db")
+        own_id = str(get_value("db/users/db","SELECT id FROM users WHERE login = '" + session.get("login")+"'"))
+
+        csr = db.cursor()
+        csr.execute("DELETE FROM friends WHERE user_id = "+ own_id + " AND user2_id = " + str(unfriend_id))
+        db.commit()
+
+        return render_template("done.html")
+
+@app.route("/edit", methods=["POST","GET"])
+def edit():
+    sessionCheck()
+
 
 
 @app.route("/register", methods=["POST", "GET"])
@@ -92,6 +168,14 @@ def registration():
 
     return render_template("registration_page.html")
 
+@app.route("/test", methods=["GET", "POST"])
+def test():
+    return render_template("login/done_login.html")
 
+@app.route("/profile", methods=["POST","GET"])
+def profile():
+    if request.method == "POST":
+        if session["login"] != None:
+            return render_template("profile.html")
 if __name__ == '__main__':
     app.run(debug=True)
