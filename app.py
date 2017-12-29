@@ -74,11 +74,24 @@ def user_page():
         login = request.args["login"]
         email = request.args["email"]
 
+@app.route("/edit", methods=["POST", "GET"])
+def edit():
+    sessionCheck()
+    if request.method == "POST":
+        new_email = request.form["email"]
+        db = sqlite3.connect("db/users.db")
+        csr = db.cursor()
+        csr.execute("UPDATE users SET email="+ new_email +" WHERE login='"+ session.get("login") +"'")
+        db.commit()
+        db.close()
+        return redirect("/")
+
+    return render_template("edit.html")
 
 @app.route("/home", methods=["POST", "GET"])
 def hello():
     sessionCheck()
-    name = session.get("login");
+    name = session.get("login")
     status = get_value("db/users.db", "SELECT status_text FROM users WHERE login = '"+ session.get("login") +"'")
     avatar = get_value("db/users.db", "SELECT avatar FROM users WHERE login = '" + session.get("login") + "'")
 
@@ -136,12 +149,6 @@ def remove_friend():
         db.commit()
 
         return render_template("done.html")
-
-@app.route("/edit", methods=["POST","GET"])
-def edit():
-    sessionCheck()
-
-
 
 @app.route("/register", methods=["POST", "GET"])
 def registration():
